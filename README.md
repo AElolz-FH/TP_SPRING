@@ -17,6 +17,6 @@
 - La requête n'affiche pas de valeurs de retour, malgré le payload, il doit sûrement y avoir une erreur d'enregistrement
 
 #### Remarque
--Lorsque je crée une transaction, et je que récupère les comptes avec la méthode : GET/Compte/{id}/comptes la liste des transactions n'est pas mise à jour
+- Lorsque je crée une transaction, et je que récupère les comptes avec la méthode : GET/Compte/{id}/comptes la liste des transactions n'est pas mise à jour
 
 
