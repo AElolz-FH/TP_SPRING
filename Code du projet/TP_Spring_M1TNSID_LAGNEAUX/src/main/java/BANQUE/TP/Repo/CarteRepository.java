@@ -15,6 +15,5 @@ import org.springframework.data.repository.query.Param;
 public interface CarteRepository extends JpaRepository<Carte,Integer> {
     @Query("SELECT c FROM Carte c WHERE :titulaire IN elements(c.listeTitulaires)")
     Carte findCarteByTitulaireCarte(@Param("titulaire") String titulaire);
-
     Carte findCarteByNumeroCarte(Long numeroCarte);
 }

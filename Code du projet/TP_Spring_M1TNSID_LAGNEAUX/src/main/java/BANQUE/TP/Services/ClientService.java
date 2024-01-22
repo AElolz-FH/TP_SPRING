@@ -44,7 +44,6 @@ public class ClientService {
             throw new BadRequest("Les donnnées en entrée du service sont non renseignes ou incorrectes. Erreur 400");
         }
 
-
         Client clientAEnregistrer = Client.builder()
                 .prenom(creerClientPayload.getPrenom())
                 .nom(creerClientPayload.getNom())
