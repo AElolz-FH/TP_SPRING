@@ -14,6 +14,7 @@ import BANQUE.TP.Repo.CompteRepository;
 import BANQUE.TP.Repo.transactionRepository;
 import BANQUE.TP.odt.Reponses.creerVirementReponse;
 import BANQUE.TP.odt.Request.creerVirementPayload;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -27,50 +28,68 @@ public class VirementService {
     transactionRepository transactionRepository;
     @Autowired
     CompteRepository compteRepository;
-
+    @Transactional
     public creerVirementReponse creerVirement(creerVirementPayload payload) {
         try {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
-            String dateString = "2022-11-28T18:46:19";
-            LocalDateTime dateTime = LocalDateTime.parse(dateString, formatter);
+            LocalDateTime dateTime = LocalDateTime.now();
 
             Compte compteEmetteur = this.compteRepository.findCompteByIban(payload.getIbanCompteEmetteur());
 
             if (compteEmetteur == null) {
-                throw new Exception("Le compte émetteur est nul");
+                throw new RuntimeException("Le compte émetteur est nul");
             }
 
             Client clientEmetteur = (Client) compteEmetteur.getTitulairesCompte();
             Integer idClientEmetteur = clientEmetteur.getId();
 
-            Transactions transactions = Transactions.builder()
+            Transactions transactionsEmetteur = Transactions.builder()
                     .montant(payload.getMontant())
                     .typeTransaction("Virement")
                     .typeSource("Compte")
                     .idSource(idClientEmetteur)
                     .compte(compteEmetteur)
-                    .dateTransaction(String.valueOf(dateTime))
+                    .dateTransaction(dateTime.toString())
                     .build();
 
-            if (transactions == null) {
-                throw new Exception("La transaction est nulle");
+            Transactions virementEmetteurEnBase = this.transactionRepository.save(transactionsEmetteur);
+
+            compteEmetteur.getTransactionsCompte().add(virementEmetteurEnBase);
+
+            this.compteRepository.save(compteEmetteur);
+
+            Compte compteBeneficiaire = this.compteRepository.findCompteByIban(payload.getIbanCompteBeneficiaire());
+
+            if (compteBeneficiaire == null) {
+                throw new RuntimeException("Le compte bénéficiaire est nul");
             }
 
-            //on enregistre la transaction
-            Transactions virementEnBase = this.transactionRepository.save(transactions);
+            Transactions transactionsBeneficiaire = Transactions.builder()
+                    .montant(payload.getMontant())
+                    .typeTransaction("Virement")
+                    .typeSource("Compte")
+                    .idSource(idClientEmetteur)
+                    .compte(compteBeneficiaire)
+                    .dateTransaction(dateTime.toString())
+                    .build();
 
-            compteEmetteur.getTransactionsCompte().add(virementEnBase);
-            Compte sauvegardé = this.compteRepository.save(compteEmetteur);
+            Transactions virementBeneficiaireEnBase = this.transactionRepository.save(transactionsBeneficiaire);
+
+            compteBeneficiaire.getTransactionsCompte().add(virementBeneficiaireEnBase);
+
+            this.compteRepository.save(compteBeneficiaire);
 
             return creerVirementReponse.builder()
-                    .idVirement(virementEnBase.getIdTransaction())
-                    .dateCreation(virementEnBase.getDateTransaction())
+                    .idVirement(virementEmetteurEnBase.getIdTransaction())
+                    .dateCreation(virementEmetteurEnBase.getDateTransaction())
                     .transactions(compteEmetteur.getTransactionsCompte())
                     .build();
         } catch (Exception e) {
             return null;
         }
     }
+
+
 
 
 
