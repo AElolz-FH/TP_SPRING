@@ -13,10 +13,7 @@
 #### Requête GET /comptes/{iban}/cartes
 - Malgré le problème mentionné dans la requête POST correspondante, la méthode GET /comptes/{iban}/cartes récupère correctement une liste de cartes.
 
-#### Requête POST /comptes/{iban}/cartes/{numeroCarte}/paiement
-- La requête renvoie des valeurs null, et il semble y avoir un problème lors de la sauvegarde des entités en base. Aucun enregistrement n'est présent dans la base de données.
-
 #### Requête POST /virement/
-- La requête affiche des valeurs null, et il n'y a pas d'enregistrement en base de données.
+- La requête n'affiche pas de valeurs de retour, malgré le payload, il doit sûrement y avoir une erreur d'enregistrement
 
 

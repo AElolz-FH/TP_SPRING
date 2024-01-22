@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 
@@ -240,36 +241,75 @@ public class CompteServices {
     }
 
 
-    @Transactional
-    public creerPaiementReponse creerPaiement(String iban, String numeroCarte, creerPaiementPayload payload) {
-
-        LocalDate dateCreation = (payload.getDateCreation() != null) ? LocalDate.parse(payload.getDateCreation()) : LocalDate.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
-        String formattedDate = "2022-11-28T18:46:19";
-
-        logger.info("Montant de la transaction : {}", payload.getMontant());
-
-        Transactions paiement = Transactions.builder()
-                .montant(payload.getMontant())
-                .dateTransaction(formattedDate)
-                .build();
-
-        logger.info("Montant de la transaction : {}", paiement.getMontant());
-
-        Compte compte = this.compteRepository.findCompteByIban(iban);
-        compte.getTransactionsCompte().add(paiement);
-
-        Transactions savedTransaction = this.transactionRepository.save(paiement);
-
-        logger.info("Montant de la transaction : {}", savedTransaction.getMontant());
-
-        return creerPaiementReponse.builder()
-                .idTransaction(Integer.parseInt(String.valueOf(savedTransaction.getIdTransaction())))
-                .montant(savedTransaction.getMontant())
-                .typeTransaction("DEBIT")
-                .dateCreation(formattedDate)
-                .build();
+    //méthode qui pourra être utilisée pour gérer les débits et crédits
+    public double debit_credit(Compte c,double montant,String type)
+    {
+        if(type.equals("DEBIT"))
+        {
+            return c.getSolde() - montant;
+        } else if (type.equals("CREDIT")) {
+            return c.getSolde() + montant;
+        }
+        System.out.println("Le montant du solde du compte reste inchangé");
+        return montant;
     }
+
+    public String credit_ou_debit(double montant)
+    {
+        if(montant < 0)
+        {
+            return "DEBIT";
+        } else{
+            return "CREDIT";
+        }
+    }
+
+
+    public creerPaiementReponse creerPaiement(String iban, String numeroCarte, creerPaiementPayload payload) {
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+            String dateString = "2022-11-28T18:46:19";
+            LocalDateTime dateTime = LocalDateTime.parse(dateString, formatter);
+
+
+            logger.info("Montant de la transaction : {}", payload.getMontant());
+
+            Transactions paiement = Transactions.builder()
+                    .montant(payload.getMontant())
+                    .dateTransaction(String.valueOf(dateTime))
+                    .build();
+
+            if (paiement == null) {
+                throw new Exception("La transaction est nulle");
+            }
+
+            logger.info("Montant de la transaction : {}", paiement.getMontant());
+
+            Compte compte = this.compteRepository.findCompteByIban(iban);
+
+            if (compte == null) {
+                throw new Exception("Le compte est nul");
+            }
+
+            compte.getTransactionsCompte().add(paiement);
+
+            Transactions savedTransaction = this.transactionRepository.save(paiement);
+            Compte sauvegardé = this.compteRepository.save(compte);
+
+            logger.info("Montant de la transaction : {}", savedTransaction.getMontant());
+
+            return creerPaiementReponse.builder()
+                    .idTransaction(Integer.parseInt(String.valueOf(savedTransaction.getIdTransaction())))
+                    .montant(savedTransaction.getMontant())
+                    .typeTransaction("DEBIT")
+                    .dateCreation(savedTransaction.getDateTransaction())
+                    .build();
+        } catch (Exception e) {
+            logger.error("Une erreur s'est produite lors de la création du paiement", e);
+            return null;
+        }
+    }
+
 
 
 

@@ -11,8 +11,8 @@ spring:
     properties:
       hibernate:
         ddl-auto: update
-        #show_sql: true
-        #use_sql_comments: true
+        show_sql: true
+        use_sql_comments: true
         format_sql: true
   h2:
     console.enabled: true # Acc�s � la console H2 dans votre navigateur http://localhost:8080/h2-console

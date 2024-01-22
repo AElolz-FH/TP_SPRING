@@ -17,6 +17,9 @@ import BANQUE.TP.odt.Request.creerVirementPayload;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 
 @Service
 public class VirementService {
@@ -26,35 +29,50 @@ public class VirementService {
     CompteRepository compteRepository;
 
     public creerVirementReponse creerVirement(creerVirementPayload payload) {
-        // On récupère le compte émetteur
-        Compte compteEmetteur = this.compteRepository.findCompteByIban(payload.getIbanCompteEmetteur());
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+            String dateString = "2022-11-28T18:46:19";
+            LocalDateTime dateTime = LocalDateTime.parse(dateString, formatter);
 
-        // On récupère le client pour obtenir son ID
-        Client clientEmetteur = (Client) compteEmetteur.getTitulairesCompte();
-        Integer idClientEmetteur = clientEmetteur.getId();
+            Compte compteEmetteur = this.compteRepository.findCompteByIban(payload.getIbanCompteEmetteur());
 
-        // On crée une nouvelle transaction
-        Transactions transactions = Transactions.builder()
-                .montant(payload.getMontant())
-                .typeTransaction("Virement")
-                .typeSource("Compte")
-                .idSource(idClientEmetteur)
-                .compte(compteEmetteur)
-                .dateTransaction("test")
-                .build();
+            if (compteEmetteur == null) {
+                throw new Exception("Le compte émetteur est nul");
+            }
 
-        //on enregistre la transaction
-        Transactions virementEnBase = this.transactionRepository.save(transactions);
+            Client clientEmetteur = (Client) compteEmetteur.getTitulairesCompte();
+            Integer idClientEmetteur = clientEmetteur.getId();
 
-        compteEmetteur.getTransactionsCompte().add(virementEnBase);
-        this.compteRepository.save(compteEmetteur);
+            Transactions transactions = Transactions.builder()
+                    .montant(payload.getMontant())
+                    .typeTransaction("Virement")
+                    .typeSource("Compte")
+                    .idSource(idClientEmetteur)
+                    .compte(compteEmetteur)
+                    .dateTransaction(String.valueOf(dateTime))
+                    .build();
 
-        return creerVirementReponse.builder()
-                .idVirement(virementEnBase.getIdTransaction())
-                .dateCreation(virementEnBase.getDateTransaction())
-                .transactions(compteEmetteur.getTransactionsCompte())
-                .build();
+            if (transactions == null) {
+                throw new Exception("La transaction est nulle");
+            }
+
+            //on enregistre la transaction
+            Transactions virementEnBase = this.transactionRepository.save(transactions);
+
+            compteEmetteur.getTransactionsCompte().add(virementEnBase);
+            Compte sauvegardé = this.compteRepository.save(compteEmetteur);
+
+            return creerVirementReponse.builder()
+                    .idVirement(virementEnBase.getIdTransaction())
+                    .dateCreation(virementEnBase.getDateTransaction())
+                    .transactions(compteEmetteur.getTransactionsCompte())
+                    .build();
+        } catch (Exception e) {
+            return null;
+        }
     }
+
+
 
 
 }
